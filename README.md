@@ -1,6 +1,8 @@
-# Stablecoin Risk Room
+# PegWatch
 
-A real-time stablecoin risk simulator, built **twice**: once on **Google Cloud** and once on **Databricks**, followed by a measured comparison of the two platforms.
+**Keeping watch over the peg.** A real-time stablecoin risk simulator.
+
+PegWatch is built **twice**: once on **Google Cloud** and once on **Databricks**, followed by a measured comparison of the two platforms.
 
 You play the risk officer of a fictional bank's stablecoin treasury. Live market data streams in. When a peg wobbles, volatility spikes or a payment looks unusual, you decide: hold, rebalance, pause settlement or block. An ML early-warning model and an AI agent advise you. You make the call, and every decision is written to an audit log.
 

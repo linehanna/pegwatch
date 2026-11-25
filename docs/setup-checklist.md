@@ -3,13 +3,13 @@
 Tick each item when done.
 
 ## 1. GitHub
-- [ ] Create a public repo `stablecoin-risk-room` (no README, this skeleton has one)
+- [ ] Create a public repo `pegwatch` (no README, this skeleton has one)
 - [ ] Push this skeleton (`git init`, `git add .`, `git commit -m "Initial skeleton"`, `git push`)
 - [ ] Check that `.env` is NOT in the repo
 
 ## 2. Google Cloud
 - [ ] Sign up for the free trial (card required, nothing is charged within free tier)
-- [ ] Create project `stablecoin-risk-room`
+- [ ] Create project `pegwatch`
 - [ ] Billing → Budgets & alerts → budget of 10 kr / $1 with email alerts at 50%, 90%, 100%
 - [ ] Use region `us-central1` for everything (free-tier region)
 - [ ] Enable APIs: Cloud Storage, BigQuery, Cloud Run, Cloud Scheduler, Compute Engine, Secret Manager

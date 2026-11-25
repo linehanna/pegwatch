@@ -10,7 +10,24 @@ Creates everything PegWatch needs on Google Cloud, inside the always-free tier.
 | Secrets | `coingecko-api-key`, `riksbank-api-key` | Empty containers, values added by hand |
 | VM | `pegwatch-collector` (e2-micro) | Always free in us-central1, 30 GB standard disk |
 
-## Run it (from Cloud Shell, Terraform is preinstalled)
+## Prerequisites
+
+Enable these APIs once (Terraform needs IAM and Resource Manager to create service accounts and permissions):
+
+```bash
+gcloud services enable iam.googleapis.com cloudresourcemanager.googleapis.com storage.googleapis.com bigquery.googleapis.com run.googleapis.com cloudscheduler.googleapis.com compute.googleapis.com secretmanager.googleapis.com artifactregistry.googleapis.com --async
+```
+
+Terraform is not preinstalled in Cloud Shell. Install it in your home folder so it survives restarts:
+
+```bash
+mkdir -p ~/bin && cd ~/bin
+wget -q https://releases.hashicorp.com/terraform/1.17.2/terraform_1.17.2_linux_amd64.zip
+unzip -o terraform_1.17.2_linux_amd64.zip && rm terraform_1.17.2_linux_amd64.zip
+echo 'export PATH="$HOME/bin:$PATH"' >> ~/.bashrc && source ~/.bashrc
+```
+
+## Run it (from Cloud Shell)
 
 ```bash
 git clone https://github.com/linehanna/pegwatch.git
