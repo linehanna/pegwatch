@@ -1,0 +1,135 @@
+# PegWatch gold schema contract (v1)
+#
+# This file is the single source of truth for the gold layer.
+# Both platforms MUST produce exactly these tables and columns.
+# Generate the SQL with:  python shared/schema/generate_ddl.py
+#
+# Conventions
+# - All timestamps are UTC.
+# - Money is NUMERIC (BigQuery NUMERIC = Databricks DECIMAL(38,9)).
+# - Basis points (bps): 1 bps = 0.01 %. A stablecoin at $0.998 = -20 bps.
+# - Every table has `platform` ("gcp" or "databricks") so results can be compared side by side.
+
+version: 1
+
+tables:
+
+  dim_asset:
+    description: One row per tracked asset, with its MiCA status.
+    cluster_by: [asset_id]
+    columns:
+      - {name: asset_id,         type: STRING,    nullable: false, description: "Lowercase id, e.g. usdc, eurc, btc"}
+      - {name: symbol,           type: STRING,    nullable: false, description: "Ticker, e.g. USDC"}
+      - {name: name,             type: STRING,    nullable: false}
+      - {name: asset_type,       type: STRING,    nullable: false, description: "stablecoin | volatile"}
+      - {name: peg_currency,     type: STRING,    nullable: true,  description: "USD | EUR, null for volatile assets"}
+      - {name: issuer,           type: STRING,    nullable: true}
+      - {name: mica_authorised,  type: BOOL,      nullable: true,  description: "Issuer found in ESMA MiCA register"}
+      - {name: mica_checked_at,  type: TIMESTAMP, nullable: true}
+      - {name: platform,         type: STRING,    nullable: false}
+      - {name: updated_at,       type: TIMESTAMP, nullable: false}
+
+  fct_price_minute:
+    description: One row per asset per minute. Prices in USD and SEK, plus peg deviation for stablecoins.
+    partition_by: ts_minute
+    cluster_by: [asset_id]
+    columns:
+      - {name: asset_id,          type: STRING,    nullable: false}
+      - {name: ts_minute,         type: TIMESTAMP, nullable: false, description: "Start of the minute, UTC"}
+      - {name: price_usd,         type: NUMERIC,   nullable: false}
+      - {name: price_sek,         type: NUMERIC,   nullable: true,  description: "Converted with latest Riksbank USD/SEK"}
+      - {name: price_in_peg,      type: NUMERIC,   nullable: true,  description: "Price in the asset's peg currency, null for volatile"}
+      - {name: peg_deviation_bps, type: FLOAT64,   nullable: true,  description: "(price_in_peg - 1) * 10000"}
+      - {name: volume_usd,        type: NUMERIC,   nullable: true}
+      - {name: source,            type: STRING,    nullable: false, description: "coinbase | coingecko"}
+      - {name: platform,          type: STRING,    nullable: false}
+      - {name: ingested_at,       type: TIMESTAMP, nullable: false}
+
+  fct_risk_hourly:
+    description: Hourly risk metrics per asset. Feeds the game, the dashboard and the ML model.
+    partition_by: ts_hour
+    cluster_by: [asset_id]
+    columns:
+      - {name: asset_id,             type: STRING,    nullable: false}
+      - {name: ts_hour,              type: TIMESTAMP, nullable: false}
+      - {name: avg_peg_dev_bps,      type: FLOAT64,   nullable: true}
+      - {name: max_abs_peg_dev_bps,  type: FLOAT64,   nullable: true}
+      - {name: volatility_1h,        type: FLOAT64,   nullable: true,  description: "Std dev of 1-minute log returns"}
+      - {name: volatility_24h,       type: FLOAT64,   nullable: true}
+      - {name: volume_usd_1h,        type: NUMERIC,   nullable: true}
+      - {name: risk_score,           type: INT64,     nullable: false, description: "0-100, rule-based"}
+      - {name: risk_level,           type: STRING,    nullable: false, description: "LOW | MEDIUM | HIGH"}
+      - {name: platform,             type: STRING,    nullable: false}
+      - {name: computed_at,          type: TIMESTAMP, nullable: false}
+
+  fct_depeg_prediction:
+    description: ML early-warning output. Probability that a stablecoin depegs within the next 60 minutes.
+    partition_by: ts
+    cluster_by: [asset_id]
+    columns:
+      - {name: asset_id,            type: STRING,    nullable: false}
+      - {name: ts,                  type: TIMESTAMP, nullable: false, description: "Time the prediction is for"}
+      - {name: prob_depeg_60m,      type: FLOAT64,   nullable: false, description: "0.0-1.0"}
+      - {name: predicted_depeg,     type: BOOL,      nullable: false, description: "prob_depeg_60m >= threshold"}
+      - {name: threshold,           type: FLOAT64,   nullable: false}
+      - {name: model_name,          type: STRING,    nullable: false}
+      - {name: model_version,       type: STRING,    nullable: false}
+      - {name: platform,            type: STRING,    nullable: false}
+      - {name: predicted_at,        type: TIMESTAMP, nullable: false}
+
+  fct_alert:
+    description: Events the risk officer must react to in the game.
+    partition_by: ts
+    cluster_by: [asset_id, alert_type]
+    columns:
+      - {name: alert_id,      type: STRING,    nullable: false, description: "Deterministic hash, same alert = same id on both platforms"}
+      - {name: asset_id,      type: STRING,    nullable: true}
+      - {name: payment_id,    type: STRING,    nullable: true,  description: "Set for payment-related alerts"}
+      - {name: ts,            type: TIMESTAMP, nullable: false}
+      - {name: alert_type,    type: STRING,    nullable: false, description: "DEPEG | VOLATILITY | PAYMENT_ANOMALY | MICA_BREACH"}
+      - {name: severity,      type: STRING,    nullable: false, description: "LOW | MEDIUM | HIGH"}
+      - {name: metric_value,  type: FLOAT64,   nullable: true}
+      - {name: threshold,     type: FLOAT64,   nullable: true}
+      - {name: platform,      type: STRING,    nullable: false}
+      - {name: created_at,    type: TIMESTAMP, nullable: false}
+
+  dim_client:
+    description: Synthetic corporate clients. All data is fictional.
+    cluster_by: [client_id]
+    columns:
+      - {name: client_id,     type: STRING,    nullable: false}
+      - {name: company_name,  type: STRING,    nullable: false}
+      - {name: country,       type: STRING,    nullable: false, description: "ISO 3166-1 alpha-2"}
+      - {name: segment,       type: STRING,    nullable: false, description: "SME | MID | LARGE"}
+      - {name: is_synthetic,  type: BOOL,      nullable: false}
+      - {name: platform,      type: STRING,    nullable: false}
+
+  fct_payment:
+    description: Synthetic cross-border payments, with routing and compliance flags.
+    partition_by: ts
+    cluster_by: [client_id]
+    columns:
+      - {name: payment_id,               type: STRING,    nullable: false}
+      - {name: client_id,                type: STRING,    nullable: false}
+      - {name: ts,                       type: TIMESTAMP, nullable: false}
+      - {name: amount,                   type: NUMERIC,   nullable: false}
+      - {name: currency,                 type: STRING,    nullable: false, description: "EUR | USD | SEK"}
+      - {name: amount_sek,               type: NUMERIC,   nullable: true}
+      - {name: rail,                     type: STRING,    nullable: false, description: "SEPA | SWIFT | STABLECOIN"}
+      - {name: asset_id,                 type: STRING,    nullable: true,  description: "Set when rail = STABLECOIN"}
+      - {name: provider,                 type: STRING,    nullable: true,  description: "Crypto-asset service provider used"}
+      - {name: provider_mica_authorised, type: BOOL,      nullable: true}
+      - {name: anomaly_score,            type: FLOAT64,   nullable: true}
+      - {name: is_synthetic,             type: BOOL,      nullable: false}
+      - {name: platform,                 type: STRING,    nullable: false}
+
+  fct_fx_daily:
+    description: Riksbank exchange rates used for SEK conversion.
+    partition_by: rate_date
+    cluster_by: [currency_pair]
+    columns:
+      - {name: rate_date,      type: DATE,      nullable: false}
+      - {name: currency_pair,  type: STRING,    nullable: false, description: "e.g. USDSEK, EURSEK"}
+      - {name: rate,           type: NUMERIC,   nullable: false, description: "SEK per 1 unit of foreign currency"}
+      - {name: source,         type: STRING,    nullable: false}
+      - {name: platform,       type: STRING,    nullable: false}
