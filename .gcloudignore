@@ -1,0 +1,12 @@
+# Files NOT uploaded to Cloud Build (keeps builds small and secrets out)
+.git/
+.venv/
+data/
+.env
+*.egg-info/
+__pycache__/
+web/
+api/
+platforms/databricks/
+**/.terraform/
+*.tfstate*

@@ -1,0 +1,17 @@
+# Build and push the ingestion image.
+# Run from the REPO ROOT:
+#   gcloud builds submit . --config platforms/gcp/ingest/cloudbuild.yaml \
+#     --service-account=projects/pegwatch/serviceAccounts/pegwatch-build@pegwatch.iam.gserviceaccount.com
+substitutions:
+  _IMAGE: us-central1-docker.pkg.dev/${PROJECT_ID}/pegwatch/ingest:latest
+
+steps:
+  - name: gcr.io/cloud-builders/docker
+    args: ["build", "-f", "platforms/gcp/ingest/Dockerfile", "-t", "${_IMAGE}", "."]
+
+images:
+  - ${_IMAGE}
+
+options:
+  logging: CLOUD_LOGGING_ONLY   # required when using a custom build service account
+  dynamic_substitutions: true

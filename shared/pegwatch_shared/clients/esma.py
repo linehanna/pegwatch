@@ -74,4 +74,10 @@ class EsmaMicaClient:
         )
 
     def download_all(self) -> list[RawRecord]:
-        return [self.download(cat, url) for cat, url in self.discover_csv_links().items()]
+        """Download the five register files. Other CSVs on the page (field descriptions,
+        unrelated samples) are classified as other_* and skipped."""
+        return [
+            self.download(cat, url)
+            for cat, url in self.discover_csv_links().items()
+            if cat in CATEGORIES
+        ]
