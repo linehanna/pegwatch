@@ -1,0 +1,20 @@
+[project]
+name = "pegwatch-shared"
+version = "0.1.0"
+description = "Shared data source clients and schema for PegWatch (used by both GCP and Databricks)"
+requires-python = ">=3.10"
+dependencies = [
+    "requests>=2.31",
+    "pyyaml>=6.0",
+]
+
+[project.optional-dependencies]
+live = ["websockets>=12.0"]   # only needed for the live Coinbase collector
+dev = ["python-dotenv>=1.0"]  # loads .env when running locally
+
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools.packages.find]
+include = ["pegwatch_shared*"]

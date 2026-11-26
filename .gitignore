@@ -49,3 +49,6 @@ data/
 Thumbs.db
 .vscode/
 .idea/
+
+# Python packaging
+*.egg-info/
