@@ -9,7 +9,8 @@ dependencies = [
 ]
 
 [project.optional-dependencies]
-live = ["websockets>=12.0"]   # only needed for the live Coinbase collector
+live = ["websockets>=12.0"]          # only needed for the live Coinbase collector
+gcp = ["google-cloud-storage>=2.16"]  # only needed to write to Cloud Storage
 dev = ["python-dotenv>=1.0"]  # loads .env when running locally
 
 [build-system]
