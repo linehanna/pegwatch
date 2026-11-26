@@ -24,6 +24,7 @@ Write a line every time you notice something about either platform. The final co
 | 2026-11-26 | Both | Gold schema | ~0.5 | Contract + generated DDL applied on both platforms |
 | 2026-11-26 | Shared | Clients + ingest jobs | ~1.5 | 4 source clients, smoke test, 3 jobs; all sources OK locally |
 | 2026-11-26 | GCP | Bronze ingestion | ~1 | Docker image, Cloud Build, 3 Cloud Run jobs, 3 Cloud Scheduler jobs via Terraform |
+| 2026-11-26 | Databricks | Bronze ingestion | ~0.3 | Secret scope, volume, 3 scheduled jobs via SDK notebook; same ingest.py as GCP |
 
 ## Observations
 
@@ -48,6 +49,12 @@ Write a line every time you notice something about either platform. The final co
 | 2026-11-26 | GCP | 2 Dev time | First run failed on a missing Python dependency; Cloud Logging showed the full traceback in seconds |
 | 2026-11-26 | GCP | 2 Dev time | Image build ~37 s; job cold start 20-60 s; runs complete well within free tier |
 | 2026-11-26 | GCP | 1 Cost | Uses exactly the 3 free Cloud Scheduler jobs per billing account; a 4th schedule would cost ~$0.10/month |
+| 2026-11-26 | Both | 2 Dev time | Same `ingest.py` runs unchanged on both; only the sink differs (gs:// vs /Volumes/...) |
+| 2026-11-26 | Databricks | 2 Dev time | No container or image build needed: notebook imports the shared code straight from the Git folder |
+| 2026-11-26 | Databricks | 3 Data freshness | market_hourly run took 7.4 s end to end (serverless); GCP Cloud Run job needed 20-60 s cold start |
+| 2026-11-26 | Databricks | 5 Governance | Secrets stored via SDK in a secret scope; key passed through a notebook parameter, never in code |
+| 2026-11-26 | Databricks | 6 CI/CD and IaC | Jobs created from code (SDK in a notebook), not yet Asset Bundles; GCP uses Terraform |
+| 2026-11-26 | Databricks | 2 Dev time | New notebook UI moved widgets to a side panel, easy to miss |
 
 ## Limits hit
 
